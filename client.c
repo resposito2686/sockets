@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <netdb.h>
 
  /***************************************************************************
  *
@@ -30,7 +31,7 @@ struct data {
 	char c_data;
 };
 
-int main(int argc, char* argv[])
+int main(int argc, char** argv)
 {
 	/***************************************************************************
 	 *
@@ -38,8 +39,12 @@ int main(int argc, char* argv[])
 	 *
 	 **************************************************************************/
 	int sock, syn, ack;
+	char* ip;
+	char* server_addr;
 	struct sockaddr_in server;
 	struct data client_data;
+	struct hostent* host;
+	struct in_addr** addr_list;
 
 
 	/***************************************************************************
@@ -51,6 +56,7 @@ int main(int argc, char* argv[])
 	client_data.f_data = 3.82758;
 	client_data.c_data = 'g';
 	syn = 1;
+	server_addr = argv[1];
 
 
 	/***************************************************************************
@@ -71,13 +77,29 @@ int main(int argc, char* argv[])
 
 	/***************************************************************************
 	 *
+	 * Queries the DNS server for the IP address of the server name from
+	 * args and stores it into ip.
+	 *
+	 **************************************************************************/
+	if ((host = gethostbyname((const char*)server_addr)) == NULL)
+	{
+		printf("ERROR: cannot get hostname.\n");
+		return 1;
+	}
+	addr_list = (struct in_addr**)host->h_addr_list;
+	ip = inet_ntoa(*addr_list[0]);
+	printf("Retrieved IP Address from server address %s: %s\n\n", server_addr, ip);
+
+
+	/***************************************************************************
+	 *
 	 * The parameters of the socket connection are established.
 	 * sin_addr   : IP Address of server.
 	 * sin_family : Connection domain (IPv4).
 	 * sin_port   : Port used in connection.
 	 *
 	 **************************************************************************/
-	server.sin_addr.s_addr = inet_addr("127.0.1.1");
+	server.sin_addr.s_addr = inet_addr(ip);
 	server.sin_family = AF_INET;
 	server.sin_port = htons(42024);
 
